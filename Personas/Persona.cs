@@ -1,4 +1,3 @@
-//using Asistentes;
 namespace Personas
 {
    public class Persona 
@@ -29,9 +28,15 @@ namespace Personas
             return this.Nombre + " " + this.Apellido;
          }
       }
-
-       public string TipoPersona { get; set; } // Esto se usará como discriminador
-
-
+      public int AdminId 
+      {  
+         get; 
+         set;
+      }
+      public int AsistenteID
+      {
+         get; 
+         set;
+      }
    }
 }

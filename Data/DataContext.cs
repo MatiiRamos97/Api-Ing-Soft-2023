@@ -18,12 +18,11 @@ public class DataContext : DbContext {
     public DbSet<Persona> Personas { get; set;} 
 
     
-    /*
-    public DbSet<Admin> Admins { get; set; }
     
-    public DbSet<Asistentes>? Asistente { get; set; }
+    /*public DbSet<Admin>? Admins { get; set; }
+    public DbSet<Asistentes>? Asistente { get; set; }*/
 
-    */
+    
     //Entities ChorisFest
 
     public DbSet<Chorifest>? Chorifests { get; set; }
@@ -39,18 +38,12 @@ public class DataContext : DbContext {
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Persona>().HasKey(p => p.PersonaID);
-
-            // Configuración de discriminadores para evitar el error "No discriminators matched the discriminator value"
-        modelBuilder.Entity<Persona>()
-            .HasDiscriminator<string>("TipoPersona")
-            .HasValue<Admin>("Admin");
-
         modelBuilder.Entity<Chorifest>().HasKey(p => p.IDChorifest);
         modelBuilder.Entity<Bebida>().HasKey(p => p.IdBebida);
         modelBuilder.Entity<Menu>().HasKey(p => p.IdMenu);
         modelBuilder.Entity<Producto>().HasKey(p => p.IdProducto);
         modelBuilder.Entity<Chori>().HasKey(p => p.IdChori);
+        modelBuilder.Entity<Admin>().HasKey(p => p.AdminId);
+        modelBuilder.Entity<Asistentes>().HasKey(p => p.AsistenteID);
     }
-
-
 }

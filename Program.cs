@@ -10,15 +10,22 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
+
+builder.Services.AddCors(options => {
+    options.AddPolicy("api-cors", policy => {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 //Antes de que se construya app configuramos el DataContext.
 
 
 builder.Services.AddDbContext<DataContext>(options => {
     options.UseMySQL(builder.Configuration.GetConnectionString("DefaultConnection")); //Le pasamos por parametro el nombre de la cadena de appsetting.
 });
-
-
-
 
 
 var app = builder.Build();
