@@ -9,51 +9,88 @@ using Personas;
 using dto.request;
 using dto.response;
 using Chorifests;
+using api_ing_soft.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace api_ing_software.Controllers;
 
 [ApiController]
 [Route("[controller]")]
 public class AsistenteController : ControllerBase
 {
-    private readonly ILogger<AsistenteController> _logger;
-
-    public AsistenteController(ILogger<AsistenteController> logger)
+    private readonly DataContext dataContext;
+    public AsistenteController(DataContext dataContext)
     {
-        _logger = logger;
+        this.dataContext = dataContext;   
     }
 
-
-    [HttpGet(Name = "GetAsistente")]
-    public List<AsistenteResponseDTO> Get([FromQuery] AsistenteRequestDTO asistenteRequestDTO)
+   [HttpGet("{AsistenteID}")]
+   public async Task<ActionResult<List<Asistentes>>> Get(int AsistenteID)
     {
-        Persona persona = new Persona();
+        var asistenteConPersona = await this.dataContext.Asistentes
+            .Join(
+                this.dataContext.Personas,
+                asistente => asistente.PersonaID,
+                persona => persona.PersonaID,
+                (asistente, persona) => new { Asistente = asistente, Persona = persona }
+            )
+            .Where(x => x.Asistente.AsistenteID == AsistenteID)
+            .Select(x => new {
+                x.Persona,
+                x.Asistente
+            })
+            .ToListAsync(); 
 
-        List<Asistentes> asistentes = new List<Asistentes>{};
-        Asistentes asistente = new Asistentes();                                
-        asistente.AsistenteID = 1;
-        asistente.Asistio = true;
-        asistente.ChorifestID = 1;
-        asistente.Pagado = true;
-        asistente.Nombre = "Martina";
-        asistente.Apellido = "Ardiles";
-        asistente.Descripcion = asistente.NombreCompleto + " - " + (asistente.Pagado ? "Pagado" : "No pagado");
-        asistente.ChorifestID = 1;
+        return Ok(asistenteConPersona);
+    }
 
-        asistentes.Add(asistente);
-
-        List<Asistentes> listaFiltrada = asistentes.Where(x => x.Nombre == asistenteRequestDTO.Nombre && x.Apellido == asistenteRequestDTO.Apellido).ToList();
-
-        List<AsistenteResponseDTO> retorno = new List<AsistenteResponseDTO>();
-
-        foreach(Asistentes asistente1 in listaFiltrada)
+    [HttpPost]
+    public async Task<ActionResult<Asistentes>> Post([FromBody] Asistentes asistentes)
+    {
+        if (this.dataContext != null && this.dataContext.Asistentes != null)
         {
-            retorno.Add(new AsistenteResponseDTO{Descripcion = asistente.Descripcion,
-            IDChorifest = asistente.ChorifestID,
-            IDAsistente = asistente.AsistenteID,
-            Pagado = asistente.Pagado,
-            Asistio = asistente.Asistio,
-            });
-        }
+            await this.dataContext.Asistentes.AddAsync(asistentes);
 
-        return retorno;
+            await this.dataContext.SaveChangesAsync();
+        }
+        return Ok(asistentes);
     }
+
+    [HttpPut("{AsistenteID}")]
+    public async Task<ActionResult<Asistentes>> Put(
+        [FromRoute] int AsistenteID, 
+        [FromBody] Asistentes asistente)
+    {
+        if (this.dataContext != null && this.dataContext.Asistentes != null)
+        {    
+            Asistentes? dbAsistente = await this.dataContext.Asistentes.FindAsync(AsistenteID);
+            
+            if (dbAsistente == null)
+            {
+                return NotFound("Recurso No Encontrado");
+            }   
+            dbAsistente.Asistio = asistente.Asistio;
+            dbAsistente.Pagado = asistente.Pagado;
+            await this.dataContext.SaveChangesAsync();
+        }
+        return Ok(asistente);
+    } 
+
+    [HttpDelete("{AsistenteID}")]
+    public async Task<ActionResult<Asistentes>> Delete(int AsistenteID)
+    {
+        if (this.dataContext != null && this.dataContext.Asistentes != null)
+        {           
+            Asistentes? dbAsistente = await this.dataContext.Asistentes.FindAsync(AsistenteID);
+            
+            if (dbAsistente == null)
+            {
+                return NotFound("Recurso No Encontrado");
+            }  
+            dataContext.Asistentes.Remove(dbAsistente);
+
+           await this.dataContext.SaveChangesAsync();
+        }
+        return Ok();
+    } 
 }

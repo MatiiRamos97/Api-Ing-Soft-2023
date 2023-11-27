@@ -1,84 +1,88 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApplicationModels;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using Menues;
 using dto.request;
 using dto.response;
-using Personas;
+using api_ing_soft.Data;
+
+namespace api_ing_software.Controllers;
 
 [ApiController]
 [Route("[controller]")]
 public class MenuController : ControllerBase
 {
-    private readonly ILogger<MenuController> _logger;
-
-    public MenuController(ILogger<MenuController> logger)
+    private readonly DataContext dataContext;
+    public MenuController(DataContext dataContext)
     {
-        _logger = logger;
+        this.dataContext = dataContext;   
     }
 
-    [HttpGet(Name = "GetMenu")]
-    public List<MenuResponseDTO> Get([FromQuery] MenuRequestDTO menuRequestDTO)
+    [HttpGet("{MenuId}")]
+    public async Task<ActionResult<List<Menu>>> Get(int MenuId)
     {
-        Bebida bebida = new Bebida();
-        bebida.Nombre = "Coca";
-        bebida.Cantidad = 1;
-        bebida.ConHielo = true;
-        bebida.Descripcion = bebida.Nombre + ((bebida.ConHielo) ? "Con hiehlo" : "Sin hielo");
-        bebida.Precio = 150 + ((bebida.ConHielo) ? 50 : 0);
+        var menuCompleto = await this.dataContext.Menu
+            .Include(menu => menu.ChoriPan) // Incluir la relación ChoriPan
+            .Include(menu => menu.Bebida)   // Incluir la relación Bebida
+            .Where(menu => menu.MenuID == MenuId)
+            .ToListAsync();
 
-        Bebida bebida1 = new Bebida();
-        bebida1.Nombre = "Coca";
-        bebida1.Cantidad = 1;
-        bebida1.ConHielo = false;
-        bebida1.Descripcion = bebida1.Nombre + ((bebida1.ConHielo) ? "Con hiehlo" : "Sin hielo");
-        bebida1.Precio = 150 + ((bebida1.ConHielo) ? 50 : 0);
-
-        Chori chori = new Chori();
-        chori.EsVegano = false;
-        chori.Descripcion = "Chori Comun";
-        chori.Precio = 1000;
-        chori.Cantidad = 1;
-        chori.ConPapas = false;
-
-        Chori chori1 = new Chori();
-        chori1.EsVegano = true;
-        chori1.Descripcion = "Chori Vegano";
-        chori1.Precio = 1000;
-        chori1.Cantidad = 1;
-        chori1.ConPapas = true;
-
-        //Primero hacer una lista de los choris. y la Bebida. Recorrer la listas y armar el menu.
-        //Por cada recorrido de la listas se arma la descripcion del menu. 
-        List<Menu> menus = new List<Menu>{};
-        Menu menu = new Menu();
-        menu.TieneExtra = true;
-        menu.IdMenu = 1;
-        menu.EsVegano = chori.EsVegano;     
-
-        menus.Add(menu);
-
-        Menu menu1 = new Menu();
-        menu1.TieneExtra = false;
-        menu1.IdMenu = 2;
-        menu1.EsVegano = chori1.EsVegano;       
-
-        menus.Add(menu1);   
-
-        IEnumerable<Menu> listaFiltrada = menus.Where(x => x.EsVegano == menuRequestDTO.EsVegano);
-        
-        List<MenuResponseDTO> retorno = new List<MenuResponseDTO>();
-
-        foreach(Menu menu2 in listaFiltrada)
+        if (menuCompleto.Count == 0)
         {
-            retorno.Add(new MenuResponseDTO{DescripcionCompleta = chori.Descripcion + " + " + bebida.Descripcion +  " " + (chori1.ConPapas ? "Con papas" : ""),
-            Precio = (chori.Precio + bebida.Precio) + (menu2.TieneExtra ? 100 : 0)});
+            return NotFound("El ID del menú no existe");
         }
 
-        return retorno;
+        return Ok(menuCompleto);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Menu>> Post([FromBody] Menu menu)
+    {
+        if (this.dataContext != null && this.dataContext.Menu != null)
+        {
+            await this.dataContext.Menu.AddAsync(menu);
+
+            await this.dataContext.SaveChangesAsync();
+        }
+        return Ok(menu);
+    }
+
+    [HttpPut("{MenuID}")]
+    public async Task<ActionResult<Menu>> Put(
+        [FromRoute] int MenuID, 
+        [FromBody] Menu menu)
+    {
+        if (this.dataContext != null && this.dataContext.Menu != null)
+        {    
+            Menu? dbMenu = await this.dataContext.Menu.FindAsync(MenuID);
+            
+            if (dbMenu == null)
+            {
+                return NotFound("El ID del admin no existe");
+            }   
+            dbMenu.MenuID = menu.MenuID;
+            dbMenu.Nombre = menu.Nombre;
+            dbMenu.Bebida = menu.Bebida;
+            dbMenu.ChoriPan = menu.ChoriPan;
+            await this.dataContext.SaveChangesAsync();
+        }
+        return Ok(menu);
+    } 
+
+    [HttpDelete("{MenuID}")]
+    public async Task<ActionResult<Menu>> Delete(int MenuID)
+    {
+        if (this.dataContext != null && this.dataContext.Menu != null)
+        {           
+            Menu? dbMenu = await this.dataContext.Menu.FindAsync(MenuID);
+            
+            if (dbMenu == null)
+            {
+                return NotFound("El ID del menú no existe");
+            }  
+            dataContext.Menu.Remove(dbMenu);
+
+           await this.dataContext.SaveChangesAsync();
+        }
+        return Ok();
     }
 }

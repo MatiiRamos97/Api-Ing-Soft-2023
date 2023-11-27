@@ -1,3 +1,4 @@
+using Chorifests;
 namespace Personas
 {
    public class Persona 
@@ -28,15 +29,7 @@ namespace Personas
             return this.Nombre + " " + this.Apellido;
          }
       }
-      public int AdminId 
-      {  
-         get; 
-         set;
-      }
-      public int AsistenteID
-      {
-         get; 
-         set;
-      }
+      public Admin? admin { get; set; }
+      public Asistentes? asistentes { get; set; }
    }
 }

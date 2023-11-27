@@ -1,26 +1,24 @@
-namespace Menues 
+namespace Menues
 {
-    public class Menu
-    {
-        public int IdMenu{
-            get;
-            set;
-        }
-
-        public string Descripcion 
-        {
-            get;
-            set;
-
-        }
-
-        public bool TieneExtra{
-            get;
-            set;
-        }
-        public bool EsVegano{
-            get;
-            set;
-        }
+   public class Menu 
+   {  
+      public int MenuID
+      {
+         get; 
+         set;
+      }
+      public int ChorifestID
+      {
+         get;
+         set;
+      } = 0;
+      public string Nombre
+      {
+         get; 
+         set;
+      } = "";
+      public ChoriPan? ChoriPan { get; set;} 
+      public Bebida? Bebida {get; set;}
     }
+
 }

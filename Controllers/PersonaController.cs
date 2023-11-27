@@ -1,14 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApplicationModels;
-using Microsoft.Extensions.Logging;
-using Menues;
 using Personas;
 using api_ing_soft.Data;
-using System.Security.Cryptography.Xml;
 using Microsoft.EntityFrameworkCore;
 
 namespace api_ing_software.Controllers;
@@ -23,29 +15,67 @@ public class PersonaController : ControllerBase
         this.dataContext = dataContext;   
     }
 
-    /*[HttpGet(Name = "GetPersona")]
-    public Persona Get()
-    {        
-        Persona persona = new Persona();                                  
-        persona.PersonaID = 1;
-        persona.Email = "marti.ardiles@gmail.com";
-        persona.Nombre = "Martina";
-        persona.Apellido = "Ardiles";
-
-        return persona;
-    } */
-        //Le pasamos al metodo get el IDPersona
     [HttpGet("{IDPersona}")]
     public async Task<ActionResult<List<Persona>>> Get(int IDPersona)
     {
         List<Persona> personas = new List<Persona>();
         //hay que crear las relaciones entre personas y admin y asistente (capaz que los id en la tabla persona sea null cosa de que no jodan)
-        if (this.dataContext != null && this.dataContext.Personas != null) // && //this.dataContext.Admin != null )
+        if (this.dataContext != null && this.dataContext.Personas != null)
         {
-           //Admin? admin = await this.dataContext.Admin.FindAsync(IDPersona);
-            personas = await this.dataContext.Personas.ToListAsync(); 
+            //Admin? admin = await this.dataContext.Admin.FindAsync(IDPersona);
+            personas = await this.dataContext.Personas.Where(x => x.PersonaID == IDPersona).ToListAsync(); 
         }
-
         return Ok(personas);
     }
+    
+    [HttpPost]
+    public async Task<ActionResult<Persona>> Post([FromBody] Persona persona)
+    {
+        if (this.dataContext != null && this.dataContext.Personas != null)
+        {
+            await this.dataContext.Personas.AddAsync(persona);
+
+            await this.dataContext.SaveChangesAsync();
+        }
+        return Ok(persona);
+    }
+
+    [HttpPut("{IDPersona}")]
+    public async Task<ActionResult<Persona>> Put(
+        [FromRoute] int IDPersona, 
+        [FromBody] Persona persona)
+    {
+        if (this.dataContext != null && this.dataContext.Personas != null)
+        {    
+            Persona? dbPersona = await this.dataContext.Personas.FindAsync(IDPersona);
+            
+            if (dbPersona == null)
+            {
+                return NotFound("Recurso No Encontrado");
+            }   
+            dbPersona.Nombre = persona.Nombre;
+            dbPersona.Apellido = persona.Apellido;
+            dbPersona.Email = persona.Email;
+            await this.dataContext.SaveChangesAsync();
+        }
+        return Ok(persona);
+    } 
+
+    [HttpDelete("{IDPersona}")]
+    public async Task<ActionResult<Persona>> Delete(int IDPersona)
+    {
+        if (this.dataContext != null && this.dataContext.Personas != null)
+        {           
+            Persona? dbPersona = await this.dataContext.Personas.FindAsync(IDPersona);
+            
+            if (dbPersona == null)
+            {
+                return NotFound("Recurso No Encontrado");
+            }  
+            dataContext.Personas.Remove(dbPersona);
+
+           await this.dataContext.SaveChangesAsync();
+        }
+        return Ok();
+    }   
 }
